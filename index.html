@@ -1,0 +1,422 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Quiz: Limit of Sequences</title>
+<script src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+
+<style>
+*{box-sizing:border-box}
+body{
+    margin:0;
+    font-family:Arial, sans-serif;
+    background:#eef3fa;
+}
+.container{
+    max-width:900px;
+    margin:40px auto;
+    background:white;
+    padding:30px;
+    border-radius:16px;
+    box-shadow:0 8px 24px rgba(0,0,0,.12);
+}
+h1,h2,h3{text-align:center}
+input{
+    width:100%;
+    padding:14px;
+    margin:10px 0;
+    font-size:16px;
+}
+button{
+    padding:14px 24px;
+    font-size:16px;
+    border:none;
+    border-radius:10px;
+    background:#2d6cdf;
+    color:white;
+    cursor:pointer;
+}
+button:disabled{
+    background:gray;
+    cursor:not-allowed;
+}
+#examPage{display:none}
+.question-box{
+    margin-top:30px;
+    min-height:180px;
+    font-size:24px;
+    text-align:center;
+    padding:20px;
+    border:2px solid #ddd;
+    border-radius:12px;
+}
+.terminated{
+    text-align:center;
+    margin-top:100px;
+}
+</style>
+</head>
+<body>
+
+<div class="container">
+
+<div id="loginPage">
+    <h1>Quiz: Limit of Sequences</h1>
+    <h3>Determine whether the sequence converges or diverges</h3>
+
+    <input id="name" placeholder="Full Name">
+    <input id="number" placeholder="Student Number">
+
+    <button onclick="startExam()">Start Exam</button>
+</div>
+
+<div id="examPage">
+    <h2>Exam</h2>
+
+    <p><b>Name:</b> <span id="studentName"></span></p>
+    <p><b>Student Number:</b> <span id="studentNumber"></span></p>
+    <p><b>Questions Generated:</b> <span id="count">0</span>/5</p>
+
+    <div id="questionBox" class="question-box">
+        Press the button to generate a question
+    </div>
+
+    <br>
+    <button id="randomBtn" onclick="generateQuestion()">Generate Question</button>
+</div>
+
+</div>
+
+<script>
+let count = 0;
+let examStarted = false;
+let usedQuestions = [];
+
+function terminateExam(msg){
+    document.body.innerHTML = `
+        <div class="terminated">
+            <h1 style="color:red;">Exam Terminated</h1>
+            <p>${msg}</p>
+        </div>
+    `;
+}
+
+function startExam(){
+    const name = document.getElementById("name").value.trim();
+    const number = document.getElementById("number").value.trim();
+
+    if(!name || !number){
+        alert("Please fill in all fields.");
+        return;
+    }
+
+    examStarted = true;
+
+    document.getElementById("studentName").innerText = name;
+    document.getElementById("studentNumber").innerText = number;
+
+    document.getElementById("loginPage").style.display="none";
+    document.getElementById("examPage").style.display="block";
+}
+
+document.addEventListener("visibilitychange", function(){
+    if(examStarted && document.hidden){
+        terminateExam("Tab switching detected.");
+    }
+});
+
+window.onblur = function(){
+    if(examStarted){
+        terminateExam("Window switching detected.");
+    }
+};
+
+document.addEventListener("keydown", function(e){
+    if(!examStarted) return;
+
+    if(e.key==="F5" || (e.ctrlKey && e.key.toLowerCase()==="r")){
+        e.preventDefault();
+        terminateExam("Refresh detected.");
+    }
+});
+
+window.addEventListener("beforeunload", function(e){
+    if(examStarted){
+        e.preventDefault();
+        e.returnValue="";
+    }
+});
+
+history.pushState(null,null,location.href);
+window.onpopstate = function(){
+    terminateExam("Back button detected.");
+};
+
+const convergentBank = [`\\[a_n=\\frac{4n^3+2n-1}{2n^3+5}\\]`,
+`\\[a_n=\\frac{7n^4+3}{3n^4+n}\\]`,
+`\\[a_n=\\frac{5n^5+2n}{2n^5+7}\\]`,
+`\\[a_n=\\frac{9n^3+1}{4n^3+8}\\]`,
+`\\[a_n=\\frac{6n^4+5n}{5n^4+1}\\]`,
+`\\[a_n=\\frac{11n^2+7}{8n^2+3}\\]`,
+`\\[a_n=\\frac{13n^5+4}{9n^5+6}\\]`,
+`\\[a_n=\\frac{8n^3+2}{7n^3+1}\\]`,
+`\\[a_n=\\frac{12n^4+1}{10n^4+9}\\]`,
+`\\[a_n=\\frac{14n^5+8}{11n^5+2}\\]`,
+
+`\\[a_n=\\left(\\frac{2}{3}\\right)^n\\]`,
+`\\[a_n=\\left(\\frac{3}{5}\\right)^n\\]`,
+`\\[a_n=\\left(\\frac{4}{7}\\right)^n\\]`,
+`\\[a_n=\\left(\\frac{5}{8}\\right)^n\\]`,
+`\\[a_n=\\left(\\frac{6}{11}\\right)^n\\]`,
+`\\[a_n=\\left(\\frac{7}{12}\\right)^n\\]`,
+`\\[a_n=\\left(\\frac{8}{13}\\right)^n\\]`,
+`\\[a_n=\\left(\\frac{9}{14}\\right)^n\\]`,
+`\\[a_n=\\left(\\frac{10}{17}\\right)^n\\]`,
+`\\[a_n=\\left(\\frac{11}{18}\\right)^n\\]`,
+
+`\\[a_n=\\frac{2^n}{3^n+5^n}\\]`,
+`\\[a_n=\\frac{3^n}{7^n+2^n}\\]`,
+`\\[a_n=\\frac{4^n}{8^n+1}\\]`,
+`\\[a_n=\\frac{5^n}{9^n+3^n}\\]`,
+`\\[a_n=\\frac{6^n}{10^n+2^n}\\]`,
+`\\[a_n=\\frac{7^n}{12^n+4^n}\\]`,
+`\\[a_n=\\frac{8^n}{13^n+5^n}\\]`,
+`\\[a_n=\\frac{9^n}{15^n+1}\\]`,
+`\\[a_n=\\frac{10^n}{16^n+3^n}\\]`,
+`\\[a_n=\\frac{11^n}{18^n+2^n}\\]`,
+
+`\\[a_n=\\frac{\\sqrt{4n^2+1}}{2n}\\]`,
+`\\[a_n=\\frac{\\sqrt{9n^2+2}}{3n}\\]`,
+`\\[a_n=\\frac{\\sqrt{16n^2+3}}{4n}\\]`,
+`\\[a_n=\\frac{\\sqrt{25n^2+4}}{5n}\\]`,
+`\\[a_n=\\frac{\\sqrt{36n^2+5}}{6n}\\]`,
+`\\[a_n=\\frac{\\sqrt{49n^2+6}}{7n}\\]`,
+`\\[a_n=\\frac{\\sqrt{64n^2+7}}{8n}\\]`,
+`\\[a_n=\\frac{\\sqrt{81n^2+8}}{9n}\\]`,
+`\\[a_n=\\frac{\\sqrt{100n^2+9}}{10n}\\]`,
+`\\[a_n=\\frac{\\sqrt{121n^2+10}}{11n}\\]`,
+
+`\\[a_n=\\frac{3n^2+1}{n^3+4}\\]`,
+`\\[a_n=\\frac{5n^3+2}{n^4+7}\\]`,
+`\\[a_n=\\frac{6n^4+1}{n^5+8}\\]`,
+`\\[a_n=\\frac{7n^2+3}{n^4+1}\\]`,
+`\\[a_n=\\frac{8n^3+4}{n^5+2}\\]`,
+`\\[a_n=\\frac{9n^4+5}{n^6+3}\\]`,
+`\\[a_n=\\frac{10n^2+6}{n^4+4}\\]`,
+`\\[a_n=\\frac{11n^3+7}{n^5+5}\\]`,
+`\\[a_n=\\frac{12n^4+8}{n^6+6}\\]`,
+`\\[a_n=\\frac{13n^2+9}{n^5+1}\\]`,
+
+`\\[a_n=\\frac{15n^3+1}{12n^3+2}\\]`,
+`\\[a_n=\\frac{16n^4+2}{13n^4+3}\\]`,
+`\\[a_n=\\frac{17n^5+3}{14n^5+4}\\]`,
+`\\[a_n=\\frac{18n^2+4}{15n^2+5}\\]`,
+`\\[a_n=\\frac{19n^3+5}{16n^3+6}\\]`,
+`\\[a_n=\\frac{20n^4+6}{17n^4+7}\\]`,
+`\\[a_n=\\frac{21n^5+7}{18n^5+8}\\]`,
+`\\[a_n=\\frac{22n^2+8}{19n^2+9}\\]`,
+`\\[a_n=\\frac{23n^3+9}{20n^3+1}\\]`,
+`\\[a_n=\\frac{24n^4+1}{21n^4+2}\\]`,
+
+`\\[a_n=\\left(\\frac{12}{19}\\right)^n\\]`,
+`\\[a_n=\\left(\\frac{13}{21}\\right)^n\\]`,
+`\\[a_n=\\left(\\frac{14}{23}\\right)^n\\]`,
+`\\[a_n=\\left(\\frac{15}{26}\\right)^n\\]`,
+`\\[a_n=\\left(\\frac{16}{27}\\right)^n\\]`,
+`\\[a_n=\\left(\\frac{17}{29}\\right)^n\\]`,
+`\\[a_n=\\left(\\frac{18}{31}\\right)^n\\]`,
+`\\[a_n=\\left(\\frac{19}{33}\\right)^n\\]`,
+`\\[a_n=\\left(\\frac{20}{34}\\right)^n\\]`,
+`\\[a_n=\\left(\\frac{21}{37}\\right)^n\\]`,
+
+`\\[a_n=\\frac{\\sqrt{144n^2+11}}{12n}\\]`,
+`\\[a_n=\\frac{\\sqrt{169n^2+12}}{13n}\\]`,
+`\\[a_n=\\frac{\\sqrt{196n^2+13}}{14n}\\]`,
+`\\[a_n=\\frac{\\sqrt{225n^2+14}}{15n}\\]`,
+`\\[a_n=\\frac{\\sqrt{256n^2+15}}{16n}\\]`,
+`\\[a_n=\\frac{\\sqrt{289n^2+16}}{17n}\\]`,
+`\\[a_n=\\frac{\\sqrt{324n^2+17}}{18n}\\]`,
+`\\[a_n=\\frac{\\sqrt{361n^2+18}}{19n}\\]`,
+`\\[a_n=\\frac{\\sqrt{400n^2+19}}{20n}\\]`,
+`\\[a_n=\\frac{\\sqrt{441n^2+20}}{21n}\\]`,
+
+`\\[a_n=\\frac{25n^3+2}{22n^3+3}\\]`,
+`\\[a_n=\\frac{26n^4+3}{23n^4+4}\\]`,
+`\\[a_n=\\frac{27n^5+4}{24n^5+5}\\]`,
+`\\[a_n=\\frac{28n^2+5}{25n^2+6}\\]`,
+`\\[a_n=\\frac{29n^3+6}{26n^3+7}\\]`,
+`\\[a_n=\\frac{30n^4+7}{27n^4+8}\\]`,
+`\\[a_n=\\frac{31n^5+8}{28n^5+9}\\]`,
+`\\[a_n=\\frac{32n^2+9}{29n^2+1}\\]`,
+`\\[a_n=\\frac{33n^3+1}{30n^3+2}\\]`,
+`\\[a_n=\\frac{34n^4+2}{31n^4+3}\\]`,
+
+`\\[a_n=\\frac{35n^3+1}{32n^3+2}\\]`,
+`\\[a_n=\\frac{36n^4+2}{33n^4+3}\\]`,
+`\\[a_n=\\frac{37n^5+3}{34n^5+4}\\]`,
+`\\[a_n=\\frac{38n^2+4}{35n^2+5}\\]`,
+`\\[a_n=\\frac{39n^3+5}{36n^3+6}\\]`,
+`\\[a_n=\\frac{40n^4+6}{37n^4+7}\\]`
+]; 
+
+const divergentBank = [
+`\\[a_n=\\frac{4n^4+1}{n^2+3}\\]`,
+`\\[a_n=\\frac{5n^5+2}{n^3+4}\\]`,
+`\\[a_n=\\frac{6n^3+3}{n+5}\\]`,
+`\\[a_n=\\frac{7n^6+4}{n^2+1}\\]`,
+`\\[a_n=\\frac{8n^4+5}{n+2}\\]`,
+`\\[a_n=\\frac{9n^5+6}{n^2+3}\\]`,
+`\\[a_n=\\frac{10n^3+7}{n+4}\\]`,
+`\\[a_n=\\frac{11n^6+8}{n^3+1}\\]`,
+`\\[a_n=\\frac{12n^4+9}{n^2+2}\\]`,
+`\\[a_n=\\frac{13n^5+1}{n+3}\\]`,
+
+`\\[a_n=\\left(\\frac{3}{2}\\right)^n\\]`,
+`\\[a_n=\\left(\\frac{5}{3}\\right)^n\\]`,
+`\\[a_n=\\left(\\frac{7}{4}\\right)^n\\]`,
+`\\[a_n=\\left(\\frac{9}{5}\\right)^n\\]`,
+`\\[a_n=\\left(\\frac{11}{6}\\right)^n\\]`,
+`\\[a_n=\\left(\\frac{13}{7}\\right)^n\\]`,
+`\\[a_n=\\left(\\frac{15}{8}\\right)^n\\]`,
+`\\[a_n=\\left(\\frac{17}{9}\\right)^n\\]`,
+`\\[a_n=\\left(\\frac{19}{10}\\right)^n\\]`,
+`\\[a_n=\\left(\\frac{21}{11}\\right)^n\\]`,
+
+`\\[a_n=\\frac{5^n}{2^n+1}\\]`,
+`\\[a_n=\\frac{6^n}{3^n+2}\\]`,
+`\\[a_n=\\frac{7^n}{4^n+3}\\]`,
+`\\[a_n=\\frac{8^n}{5^n+4}\\]`,
+`\\[a_n=\\frac{9^n}{6^n+5}\\]`,
+`\\[a_n=\\frac{10^n}{7^n+6}\\]`,
+`\\[a_n=\\frac{11^n}{8^n+7}\\]`,
+`\\[a_n=\\frac{12^n}{9^n+8}\\]`,
+`\\[a_n=\\frac{13^n}{10^n+9}\\]`,
+`\\[a_n=\\frac{14^n}{11^n+10}\\]`,
+
+`\\[a_n=(-1)^n\\]`,
+`\\[a_n=(-1)^{n+1}\\]`,
+`\\[a_n=2(-1)^n\\]`,
+`\\[a_n=3(-1)^{n+1}\\]`,
+`\\[a_n=n(-1)^n\\]`,
+`\\[a_n=(n+1)(-1)^n\\]`,
+`\\[a_n=n^2(-1)^n\\]`,
+`\\[a_n=5(-1)^n\\]`,
+`\\[a_n=7(-1)^n\\]`,
+`\\[a_n=8(-1)^{n+1}\\]`,
+
+`\\[a_n=\\sqrt{n}\\]`,
+`\\[a_n=n\\]`,
+`\\[a_n=n^2\\]`,
+`\\[a_n=n^3\\]`,
+`\\[a_n=2n+1\\]`,
+`\\[a_n=3n^2+2\\]`,
+`\\[a_n=4n^3+1\\]`,
+`\\[a_n=5\\sqrt{n}\\]`,
+`\\[a_n=6n^4\\]`,
+`\\[a_n=7n^5\\]`,
+
+`\\[a_n=\\frac{14n^3+2}{2n+1}\\]`,
+`\\[a_n=\\frac{15n^4+3}{3n^2+2}\\]`,
+`\\[a_n=\\frac{16n^5+4}{4n^3+3}\\]`,
+`\\[a_n=\\frac{17n^6+5}{5n^2+4}\\]`,
+`\\[a_n=\\frac{18n^4+6}{6n+5}\\]`,
+`\\[a_n=\\frac{19n^5+7}{7n^2+6}\\]`,
+`\\[a_n=\\frac{20n^3+8}{8n+7}\\]`,
+`\\[a_n=\\frac{21n^6+9}{9n^3+8}\\]`,
+`\\[a_n=\\frac{22n^4+1}{10n^2+9}\\]`,
+`\\[a_n=\\frac{23n^5+2}{11n+10}\\]`,
+
+`\\[a_n=\\left(\\frac{23}{12}\\right)^n\\]`,
+`\\[a_n=\\left(\\frac{25}{13}\\right)^n\\]`,
+`\\[a_n=\\left(\\frac{27}{14}\\right)^n\\]`,
+`\\[a_n=\\left(\\frac{29}{15}\\right)^n\\]`,
+`\\[a_n=\\left(\\frac{31}{16}\\right)^n\\]`,
+`\\[a_n=\\left(\\frac{33}{17}\\right)^n\\]`,
+`\\[a_n=\\left(\\frac{35}{18}\\right)^n\\]`,
+`\\[a_n=\\left(\\frac{37}{19}\\right)^n\\]`,
+`\\[a_n=\\left(\\frac{39}{20}\\right)^n\\]`,
+`\\[a_n=\\left(\\frac{41}{21}\\right)^n\\]`,
+
+`\\[a_n=9(-1)^n\\]`,
+`\\[a_n=10(-1)^{n+1}\\]`,
+`\\[a_n=n^3(-1)^n\\]`,
+`\\[a_n=n^4(-1)^n\\]`,
+`\\[a_n=(2n+1)(-1)^n\\]`,
+`\\[a_n=(3n^2+1)(-1)^n\\]`,
+`\\[a_n=(4n^3+2)(-1)^n\\]`,
+`\\[a_n=(5n^4+3)(-1)^n\\]`,
+`\\[a_n=(-1)^n+n\\]`,
+`\\[a_n=(-1)^n+n^2\\]`,
+
+`\\[a_n=8n\\]`,
+`\\[a_n=9n^2\\]`,
+`\\[a_n=10n^3\\]`,
+`\\[a_n=11\\sqrt{n}\\]`,
+`\\[a_n=12n^4\\]`,
+`\\[a_n=13n^5\\]`,
+`\\[a_n=14n^2+1\\]`,
+`\\[a_n=15n^3+2\\]`,
+`\\[a_n=16n^4+3\\]`,
+`\\[a_n=17n^5+4\\]`,
+
+`\\[a_n=\\frac{24n^4+3}{12n^2+1}\\]`,
+`\\[a_n=\\frac{25n^5+4}{13n^3+2}\\]`,
+`\\[a_n=\\frac{26n^6+5}{14n^2+3}\\]`,
+`\\[a_n=\\frac{27n^4+6}{15n+4}\\]`,
+`\\[a_n=\\frac{28n^5+7}{16n^2+5}\\]`,
+`\\[a_n=\\frac{29n^3+8}{17n+6}\\]`,
+`\\[a_n=\\frac{30n^6+9}{18n^3+7}\\]`,
+`\\[a_n=\\frac{31n^4+1}{19n^2+8}\\]`,
+`\\[a_n=\\frac{32n^5+2}{20n+9}\\]`,
+`\\[a_n=\\frac{33n^6+3}{21n^2+1}\\]`
+];
+
+function generateQuestion(){
+    if(count >= 5) return;
+
+    let question;
+    let allQuestions = [...convergentBank, ...divergentBank];
+
+    // ถ้าเหลือ 1 ข้อสุดท้าย ตรวจว่าขาดประเภทไหน
+    if(count === 4){
+        let hasConvergent = usedQuestions.some(q => convergentBank.includes(q));
+        let hasDivergent = usedQuestions.some(q => divergentBank.includes(q));
+
+        if(!hasConvergent){
+            do{
+                question = convergentBank[Math.floor(Math.random()*convergentBank.length)];
+            } while(usedQuestions.includes(question));
+        }
+        else if(!hasDivergent){
+            do{
+                question = divergentBank[Math.floor(Math.random()*divergentBank.length)];
+            } while(usedQuestions.includes(question));
+        }
+    }
+
+    // ถ้ายังไม่ได้ question ให้สุ่มอิสระ
+    if(!question){
+        do{
+            question = allQuestions[Math.floor(Math.random()*allQuestions.length)];
+        } while(usedQuestions.includes(question));
+    }
+
+    usedQuestions.push(question);
+    count++;
+
+    document.getElementById("count").innerText = count;
+    document.getElementById("questionBox").innerHTML =
+        `Determine whether the following sequence converges or diverges.<br><br>${question}`;
+
+    if(window.MathJax){
+        MathJax.typesetPromise();
+    }
+
+    if(count >= 5){
+        document.getElementById("randomBtn").disabled = true;
+    }
+}
+</script>
+</body>
+</html>
